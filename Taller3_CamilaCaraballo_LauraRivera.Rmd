@@ -31,36 +31,148 @@ $$
 
 Donde $y_{ia}$ es un resultado para el hogar $i$ en el área $a$, $Treat_{ia}$ es una dicótoma que toma el valor de 1 si el hogar está ubicado en un área tratada, mientras que $\beta$ es el efecto de $ITT$. $X_a$ es el vector con dimensión $K \cdot 1$ de variables de control.
 
-a) ¿Cuál es la unidad de análisis en el estudio?
+a)  ¿Cuál es la unidad de análisis en el estudio?
 
-b) Replique la tabla 2 panel A, columnas 1 y 3 para mostrar el efecto de microfinanzas (ser tratado por el programa) en la obtención de más préstamos (acceso a créditos). Explique la intuición detrás de los resultados. Presente sus resultados con 4 cifras significativas.
+Rta: La unidad de análisis son los hogares y el paper aleatoriza los barrios.
+
+b)  Replique la tabla 2 panel A, columnas 1 y 3 para mostrar el efecto de microfinanzas (ser tratado por el programa) en la obtención de más préstamos (acceso a créditos). Explique la intuición detrás de los resultados. Presente sus resultados con 4 cifras significativas.
 
 ```{r}
+# Cargar liberias y paquetes
+
+#install.packages("haven") cual
+#install.packages("plm")
+#install.packages("skimr")
+#install.packages("dplyr")
+#install.packages("ggplot2")
+#install.packages("modelsummary")
+#install.packages("knitr")
+#install.packages("tinytex")
+#tinytex::install_tinytex()
+#install.packages("survey")
+library(knitr)
+library(haven)
+library(plm)
+library(scales)
+library(skimr)
+library(dplyr)
+library(ggplot2)
+library(AER)        
+library(fixest)
+library(lmtest)
+library(sandwich)
+library(tidyverse)
+library(stargazer)
+library(dplyr) 
+library(survey)
+
+# Leer archivo .dta
+data <- read_dta("data_endline_1and2.dta")
+
+# Ver base
+str(data)
+
+# Filtrar solo hogares de Endline 1
+data1 <- subset(data, sample1 == 1)
+
+# Reemplazar NA por 0
+data1$spandana_1 <- ifelse(is.na(data1$spandana_1), 0, data1$spandana_1)
+data1$anymfi_1   <- ifelse(is.na(data1$anymfi_1), 0, data1$anymfi_1)
+
+# Definir diseño muestral con pesos y clustering por área
+design1 <- svydesign(
+  id = ~areaid,   # cluster nivel área
+  weights = ~w1,  # pesos 
+  data = data1
+)
+
+# 5. Estimar modelos (probabilidad lineal)
+m1 <- svyglm(
+  spandana_1 ~ treatment + area_debt_total_base,
+  design = design1,
+  family = gaussian()
+)
+
+m3 <- svyglm(
+  anymfi_1 ~ treatment + area_debt_total_base,
+  design = design1,
+  family = gaussian()
+)
+
+# 6. Mostrar tabla de resultados
+stargazer(m1, m3, type = "text",
+          keep = "treatment",
+          covariate.labels = c("Treatment"),
+          dep.var.labels = c("Spandana",
+                             "MFI"),
+          digits = 4,
+          title = "Replicar Tabla 2- Credit")
 
 ```
 
-c) Replique la tabla 3 panel A, columnas  3 y 4. Explique la intuición detrás de los resultados. Recuerde incluir la corrección por sobremuestreo y errores cluster a nivel de área.
-
-```{r}
-```
-
-d) Usando “any MFI” como definición del tratamiento y “Treated Area” como asignación aleatoria inicial, calcule la tasa de cumplimiento (*compliance rate*) ¿Parece ser alta o baja? (Nota: incluya el ajuste para sobremuestreo)
+c)  Replique la tabla 3 panel A, columnas  3 y 4. Explique la intuición detrás de los resultados. Recuerde incluir la corrección por sobremuestreo y errores cluster a nivel de área.
 
 ```{r}
 
+library(survey)
+library(stargazer)
+
+# Filtrar muestra Endline 1
+data1 <- subset(data, sample1 == 1)
+
+# Reemplazar NA en variables dependientes con 0
+data1$bizassets_1     <- ifelse(is.na(data1$bizassets_1), 0, data1$bizassets_1)
+data1$bizinvestment_1 <- ifelse(is.na(data1$bizinvestment_1), 0, data1$bizinvestment_1)
+
+# Reemplazar NA en covariable de control (para no perder observaciones)
+data1$area_debt_total_base <- ifelse(is.na(data1$area_debt_total_base), 0, data1$area_debt_total_base)
+
+# Columna 3: Business assets
+m3 <- svyglm(
+  bizassets_1 ~ treatment + area_debt_total_base,
+  design = design1
+)
+
+# Columna 4: Business investment
+m4 <- svyglm(
+  bizinvestment_1 ~ treatment + area_debt_total_base,
+  design = design1
+)
+
+# Tabla final
+stargazer(m3, m4, type = "text",
+          keep = "treatment",
+          covariate.labels = c("Treatment"),
+          dep.var.labels = c("Business assets (Endline 1)",
+                             "Business investment (Endline 1)"),
+          digits = 4,
+          title = "TABLE 3 - BUSINESS (Panel A)")
+
 ```
 
-### 3. Cálculo de impacto 
+d)  Usando “any MFI” como definición del tratamiento y “Treated Area” como asignación aleatoria inicial, calcule la tasa de cumplimiento (*compliance rate*) ¿Parece ser alta o baja? (Nota: incluya el ajuste para sobremuestreo)
 
-Ahora quieres estimar el impacto de recibir efectivamente un microcrédito sobre 2
-variables: i) el consumo total (total_exp_mo_pc_1) y ii) los beneficios del negocio (*bizprofit_2*)
+```{r}
+treated <- data$treatment== 1  # selecciona solo las áreas tratadas
+
+# compliance rate ajustada por pesos
+compliance_rate <- sum(data$anymfi_1[treated] * data$w1[treated]) /
+                   sum(data$w1[treated])
+
+compliance_rate
+
+```
+
+### 3. Cálculo de impacto
+
+Ahora quieres estimar el impacto de recibir efectivamente un microcrédito sobre 2 variables: i) el consumo total (total_exp_mo_pc_1) y ii) los beneficios del negocio (*bizprofit_2*)
 
 Para ello, se toma como variable de tratamiento efectivo a la dicótoma *anymfi_1* que toma el valor de uno si el hogar recibió algún préstamo de cualquier IMF para la línea final 1 y cero en caso contrario. Podemos tomar como instrumento el hecho de que la ubicación de los bancos fue aleatoria. Para esto, use como instrumento en sus estimaciones la asignación aleatoria.
 
 Finalmente, no incluya ningún control en sus estimaciones y responda las siguientes preguntas teniendo en cuenta estas nociones y variables:
 
-a) ¿Cuáles son los supuestos necesarios para que los estimadores de VI sean válidos (en el contexto del artículo)?
+a)  ¿Cuáles son los supuestos necesarios para que los estimadores de VI sean válidos (en el contexto del artículo)?
 
-b) Para cada una de las dos variables, estime el efecto *Local Average Treament Effect* de obtener un préstamo, a través del método de Variable Instrumental. Estime también el ITT. Para cada tipo de efecto (LATE e ITT) presente una tabla con sus estimaciones y sus respectivos errores estándar. Interprete sus resultados, ¿Cuál es la diferencia en la interpretación de los dos tipos de efecto?
+b)  Para cada una de las dos variables, estime el efecto *Local Average Treament Effect* de obtener un préstamo, a través del método de Variable Instrumental. Estime también el ITT. Para cada tipo de efecto (LATE e ITT) presente una tabla con sus estimaciones y sus respectivos errores estándar. Interprete sus resultados, ¿Cuál es la diferencia en la interpretación de los dos tipos de efecto?
 
-c) ¿Cuál debería ser la relación matemática entre la tasa de cumplimiento, el *LATE* y el *ITT?* ¿Parece mantenerse esta relación en sus resultados? En una tabla presente sus cálculos de *LATE* matemáticos manuales y discuta.
+c)  ¿Cuál debería ser la relación matemática entre la tasa de cumplimiento, el *LATE* y el *ITT?* ¿Parece mantenerse esta relación en sus resultados? En una tabla presente sus cálculos de *LATE* matemáticos manuales y discuta.
