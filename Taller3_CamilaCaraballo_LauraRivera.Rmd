@@ -1,0 +1,66 @@
+---
+title: "Taller 3 - Experimento Aleatorio"
+author: "Maria Camila Caraballo, Laura Sarif Rivera"
+date: "2025-09-10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Experimentos Aleatorios
+
+Esta es la introduccion
+
+```{r cars}
+summary(cars)
+```
+
+### 1. Análisis introductorio
+
+Al introducir el artículo, los autores analizaron las limitaciones y lineamientos de la investigación de microcrédito publicada. ¿Cuáles son los problemas en la identificación del impacto del microcrédito si uno simplemente compara los que tienen microcrédito y los que no tienen microcrédito? ¿Qué método utilizan los autores para identificar tal impacto? ¿Cómo resuelve ese método los problemas antes mencionados?
+
+### 2. Estimaciones originales
+
+Los autores reportan los resultados de estimar la siguiente ecuación:
+
+$$
+y_{ia} = \alpha + \beta Treat_{ia} + X'_a\gamma + \epsilon_i
+$$
+
+Donde $y_{ia}$ es un resultado para el hogar $i$ en el área $a$, $Treat_{ia}$ es una dicótoma que toma el valor de 1 si el hogar está ubicado en un área tratada, mientras que $\beta$ es el efecto de $ITT$. $X_a$ es el vector con dimensión $K \cdot 1$ de variables de control.
+
+a) ¿Cuál es la unidad de análisis en el estudio?
+
+b) Replique la tabla 2 panel A, columnas 1 y 3 para mostrar el efecto de microfinanzas (ser tratado por el programa) en la obtención de más préstamos (acceso a créditos). Explique la intuición detrás de los resultados. Presente sus resultados con 4 cifras significativas.
+
+```{r}
+
+```
+
+c) Replique la tabla 3 panel A, columnas  3 y 4. Explique la intuición detrás de los resultados. Recuerde incluir la corrección por sobremuestreo y errores cluster a nivel de área.
+
+```{r}
+```
+
+d) Usando “any MFI” como definición del tratamiento y “Treated Area” como asignación aleatoria inicial, calcule la tasa de cumplimiento (*compliance rate*) ¿Parece ser alta o baja? (Nota: incluya el ajuste para sobremuestreo)
+
+```{r}
+
+```
+
+### 3. Cálculo de impacto 
+
+Ahora quieres estimar el impacto de recibir efectivamente un microcrédito sobre 2
+variables: i) el consumo total (total_exp_mo_pc_1) y ii) los beneficios del negocio (*bizprofit_2*)
+
+Para ello, se toma como variable de tratamiento efectivo a la dicótoma *anymfi_1* que toma el valor de uno si el hogar recibió algún préstamo de cualquier IMF para la línea final 1 y cero en caso contrario. Podemos tomar como instrumento el hecho de que la ubicación de los bancos fue aleatoria. Para esto, use como instrumento en sus estimaciones la asignación aleatoria.
+
+Finalmente, no incluya ningún control en sus estimaciones y responda las siguientes preguntas teniendo en cuenta estas nociones y variables:
+
+a) ¿Cuáles son los supuestos necesarios para que los estimadores de VI sean válidos (en el contexto del artículo)?
+
+b) Para cada una de las dos variables, estime el efecto *Local Average Treament Effect* de obtener un préstamo, a través del método de Variable Instrumental. Estime también el ITT. Para cada tipo de efecto (LATE e ITT) presente una tabla con sus estimaciones y sus respectivos errores estándar. Interprete sus resultados, ¿Cuál es la diferencia en la interpretación de los dos tipos de efecto?
+
+c) ¿Cuál debería ser la relación matemática entre la tasa de cumplimiento, el *LATE* y el *ITT?* ¿Parece mantenerse esta relación en sus resultados? En una tabla presente sus cálculos de *LATE* matemáticos manuales y discuta.
