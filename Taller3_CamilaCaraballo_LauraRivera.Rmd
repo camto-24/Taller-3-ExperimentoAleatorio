@@ -173,6 +173,18 @@ Finalmente, no incluya ningún control en sus estimaciones y responda las siguie
 
 a)  ¿Cuáles son los supuestos necesarios para que los estimadores de VI sean válidos (en el contexto del artículo)?
 
+Rta: En el estudio de Banerjee, Duflo, Glennerster y Kinnan (2015), la estrategia empírica consiste en estimar el efecto causal de recibir un préstamo de microcrédito (anymfi_1) sobre variables como el consumo (total_exp_mo_pc_1) y las utilidades del negocio (bizprofit_2). Dado que el acceso efectivo a crédito no fue asignado aleatoriamente, los autores utilizan como instrumento la asignación experimental de las instituciones de microfinanzas a determinadas áreas (treated_area). Para que esta estrategia de variables instrumentales (IV) sea válida, deben cumplirse los siguientes supuestos:
+
+1) Relevancia: la ubicación aleatoria de las sucursales debe estar correlacionada con la probabilidad de que un hogar reciba microcrédito. En otras palabras, vivir en un área tratada debe aumentar significativamente la probabilidad de tener un préstamo. 
+
+2) Exogeneidad: la variable instrumental (treated_area) debe ser independiente de los factores no observados que afectan directamente los resultados de interés. En este contexto, se justifica porque la asignación de las sucursales fue resultado de un procedimiento aleatorio, lo que garantiza que, en promedio, las áreas tratadas y de control eran comparables antes de la intervención.
+
+
+3) SUTVA (Stable Unit Treatment Value Assumption): los resultados de un hogar deben depender únicamente de su propio estatus de tratamiento, y no del tratamiento asignado a otros hogares o áreas. En la práctica, este supuesto puede verse comprometido si existen efectos de derrame o spillovers entre hogares dentro o entre áreas, ya que la presencia de nuevas sucursales podría afectar a quienes no accedieron directamente al crédito.
+
+Finalmente, bajo estos supuestos, la estimación por IV identifica un efecto local promedio del tratamiento (LATE), es decir, el impacto del microcrédito sobre los hogares cuya decisión de tomar un préstamo depende de la presencia de una sucursal en su área (compliers). Por tanto, los resultados no necesariamente reflejan el efecto para todos los hogares, sino para este subgrupo específico.
+
+
 b)  Para cada una de las dos variables, estime el efecto *Local Average Treament Effect* de obtener un préstamo, a través del método de Variable Instrumental. Estime también el ITT. Para cada tipo de efecto (LATE e ITT) presente una tabla con sus estimaciones y sus respectivos errores estándar. Interprete sus resultados, ¿Cuál es la diferencia en la interpretación de los dos tipos de efecto?
 
 c)  ¿Cuál debería ser la relación matemática entre la tasa de cumplimiento, el *LATE* y el *ITT?* ¿Parece mantenerse esta relación en sus resultados? En una tabla presente sus cálculos de *LATE* matemáticos manuales y discuta.
