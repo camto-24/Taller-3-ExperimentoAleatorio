@@ -72,12 +72,14 @@ data <- read_dta("data_endline_1and2.dta")
 # Ver base
 str(data)
 
+# Revisar NA de la base
+colSums(is.na(data))
+
+# Eliminar NA
+data1 <- data %>% filter(!is.na(spandana_1))
+
 # Filtrar solo hogares de Endline 1
 data1 <- subset(data, sample1 == 1)
-
-# Reemplazar NA por 0
-data1$spandana_1 <- ifelse(is.na(data1$spandana_1), 0, data1$spandana_1)
-data1$anymfi_1   <- ifelse(is.na(data1$anymfi_1), 0, data1$anymfi_1)
 
 # Definir diseño muestral con pesos y clustering por área
 design1 <- svydesign(
@@ -86,25 +88,25 @@ design1 <- svydesign(
   data = data1
 )
 
-# 5. Estimar modelos (probabilidad lineal)
-m1 <- svyglm(
-  spandana_1 ~ treatment + area_debt_total_base,
+# 5. Regresiones
+c1 <- svyglm(
+  spandana_1 ~ treatment + area_debt_total_base + area_pop_base + area_business_total_base + area_exp_pc_mean_base + area_literate_head_base + area_literate_base,
   design = design1,
   family = gaussian()
 )
 
-m3 <- svyglm(
-  anymfi_1 ~ treatment + area_debt_total_base,
+c2 <- svyglm(
+  anymfi_1 ~ treatment + area_debt_total_base + area_pop_base + area_business_total_base + area_exp_pc_mean_base + area_literate_head_base + area_literate_base,
   design = design1,
   family = gaussian()
 )
 
 # 6. Mostrar tabla de resultados
-stargazer(m1, m3, type = "text",
+stargazer(c1, c2, type = "text",
           keep = "treatment",
           covariate.labels = c("Treatment"),
           dep.var.labels = c("Spandana",
-                             "MFI"),
+                             "Any MFI"),
           digits = 4,
           title = "Replicar Tabla 2- Credit")
 
@@ -113,40 +115,47 @@ stargazer(m1, m3, type = "text",
 c)  Replique la tabla 3 panel A, columnas  3 y 4. Explique la intuición detrás de los resultados. Recuerde incluir la corrección por sobremuestreo y errores cluster a nivel de área.
 
 ```{r}
+# Revisar NA de la base
+colSums(is.na(data1))
 
-library(survey)
-library(stargazer)
+# Eliminar NA
+data2 <- data %>% filter(!is.na(bizexpense_1))
+data3 <- data %>% filter(!is.na(bizprofit_1))
 
-# Filtrar muestra Endline 1
-data1 <- subset(data, sample1 == 1)
-
-# Reemplazar NA en variables dependientes con 0
-data1$bizassets_1     <- ifelse(is.na(data1$bizassets_1), 0, data1$bizassets_1)
-data1$bizinvestment_1 <- ifelse(is.na(data1$bizinvestment_1), 0, data1$bizinvestment_1)
-
-# Reemplazar NA en covariable de control (para no perder observaciones)
-data1$area_debt_total_base <- ifelse(is.na(data1$area_debt_total_base), 0, data1$area_debt_total_base)
+# Definir diseño muestral con pesos y clustering por área en cada base
+design2 <- svydesign(
+  id = ~ areaid,   # cluster nivel área
+  weights = ~ w1,  # pesos 
+  data = data2
+)
+design3 <- svydesign(
+  id = ~ areaid,   # cluster nivel área
+  weights = ~ w1,  # pesos 
+  data = data3
+)
 
 # Columna 3: Business assets
-m3 <- svyglm(
-  bizassets_1 ~ treatment + area_debt_total_base,
-  design = design1
+c3 <- svyglm(
+  bizexpense_1 ~ treatment + area_debt_total_base + area_pop_base + area_business_total_base + area_exp_pc_mean_base + area_literate_head_base + area_literate_base,
+  design = design2,
+  data = data2
 )
 
 # Columna 4: Business investment
-m4 <- svyglm(
-  bizinvestment_1 ~ treatment + area_debt_total_base,
-  design = design1
+c4 <- svyglm(
+  bizprofit_1 ~ treatment + area_debt_total_base + area_pop_base + area_business_total_base + area_exp_pc_mean_base + area_literate_head_base + area_literate_base,
+  design = design3,
+  data = data3
 )
 
-# Tabla final
-stargazer(m3, m4, type = "text",
+# Tabla 
+stargazer(c3, c4, type = "text",
           keep = "treatment",
           covariate.labels = c("Treatment"),
-          dep.var.labels = c("Business assets (Endline 1)",
-                             "Business investment (Endline 1)"),
+          dep.var.labels = c("Expenses",
+                             "Profit"),
           digits = 4,
-          title = "TABLE 3 - BUSINESS (Panel A)")
+          title = "TABLE 3 -(Panel A)")
 
 ```
 
@@ -171,20 +180,22 @@ Para ello, se toma como variable de tratamiento efectivo a la dicótoma *anymfi_
 
 Finalmente, no incluya ningún control en sus estimaciones y responda las siguientes preguntas teniendo en cuenta estas nociones y variables:
 
-a)  ¿Cuáles son los supuestos necesarios para que los estimadores de VI sean válidos (en el contexto del artículo)?
+a)  **¿Cuáles son los supuestos necesarios para que los estimadores de VI sean válidos (en el contexto del artículo)?**
 
-Rta: En el estudio de Banerjee, Duflo, Glennerster y Kinnan (2015), la estrategia empírica consiste en estimar el efecto causal de recibir un préstamo de microcrédito (anymfi_1) sobre variables como el consumo (total_exp_mo_pc_1) y las utilidades del negocio (bizprofit_2). Dado que el acceso efectivo a crédito no fue asignado aleatoriamente, los autores utilizan como instrumento la asignación experimental de las instituciones de microfinanzas a determinadas áreas (treated_area). Para que esta estrategia de variables instrumentales (IV) sea válida, deben cumplirse los siguientes supuestos:
+Rta: En el paper de Banerjee, Duflo, Glennerster y Kinnan (2015), la estrategia empírica consiste en estimar el efecto causal de recibir un préstamo de microcrédito de otras instituciones financieras (anymfi_1) sobre variables como el consumo (total_exp_mo_pc_1) y las utilidades del negocio (bizprofit_2). Dado que el acceso al crédito no fue asignado aleatoriamente si no que se trato de un spillover, los autores utilizan como instrumento la ubicación de los bancos de las instituciones dado de que fueron aletorias (treated_area). Para que el instrumento sea válido, se deberá contar con lo siguiente:
 
-1) Relevancia: la ubicación aleatoria de las sucursales debe estar correlacionada con la probabilidad de que un hogar reciba microcrédito. En otras palabras, vivir en un área tratada debe aumentar significativamente la probabilidad de tener un préstamo. 
+1)  Relevancia: la ubicación aleatoria de las sucursales de los bancos debe estar correlacionada con la probabilidad de que un hogar reciba microcrédito. En otras palabras, vivir en un área tratada debe aumentar significativamente la probabilidad de tener un préstamo.
 
-2) Exogeneidad: la variable instrumental (treated_area) debe ser independiente de los factores no observados que afectan directamente los resultados de interés. En este contexto, se justifica porque la asignación de las sucursales fue resultado de un procedimiento aleatorio, lo que garantiza que, en promedio, las áreas tratadas y de control eran comparables antes de la intervención.
+2)  Exogeneidad: la variable instrumental (treated_area) debe ser independiente de los factores no observados que afectan directamente el resultado de interés (mejoras el bienestar como hogar). En este contexto, se justifica porque la asignación de las sucursales fue resultado de un procedimiento aleatorio, lo que garantiza que, en promedio, las áreas tratadas y de control eran comparables antes de la intervención.
 
+    **b. Para cada una de las dos variables, estime el efecto *Local Average Treament Effect* de obtener un préstamo, a través del método de Variable Instrumental. Estime también el ITT. Para cada tipo de efecto (LATE e ITT) presente una tabla con sus estimaciones y sus respectivos errores estándar. Interprete sus resultados, ¿Cuál es la diferencia en la interpretación de los dos tipos de efecto?**
 
-3) SUTVA (Stable Unit Treatment Value Assumption): los resultados de un hogar deben depender únicamente de su propio estatus de tratamiento, y no del tratamiento asignado a otros hogares o áreas. En la práctica, este supuesto puede verse comprometido si existen efectos de derrame o spillovers entre hogares dentro o entre áreas, ya que la presencia de nuevas sucursales podría afectar a quienes no accedieron directamente al crédito.
+    Rta:
 
-Finalmente, bajo estos supuestos, la estimación por IV identifica un efecto local promedio del tratamiento (LATE), es decir, el impacto del microcrédito sobre los hogares cuya decisión de tomar un préstamo depende de la presencia de una sucursal en su área (compliers). Por tanto, los resultados no necesariamente reflejan el efecto para todos los hogares, sino para este subgrupo específico.
+    Finalmente, bajo estos supuestos, la estimación por IV identifica un efecto local promedio del tratamiento (LATE), es decir, el impacto del microcrédito sobre los hogares cuya decisión de tomar un préstamo depende de la presencia de una sucursal en su área (compliers). Por tanto, los resultados no necesariamente reflejan el efecto para todos los hogares, sino para este subgrupo específico.
 
+    SUTVA (Stable Unit Treatment Value Assumption): los resultados de un hogar deben depender únicamente de su propio estatus de tratamiento, y no del tratamiento asignado a otros hogares o áreas. En la práctica, este supuesto puede verse comprometido si existen efectos de derrame o spillovers entre hogares dentro o entre áreas, ya que la presencia de nuevas sucursales podría afectar a quienes no accedieron directamente al crédito.
 
-b)  Para cada una de las dos variables, estime el efecto *Local Average Treament Effect* de obtener un préstamo, a través del método de Variable Instrumental. Estime también el ITT. Para cada tipo de efecto (LATE e ITT) presente una tabla con sus estimaciones y sus respectivos errores estándar. Interprete sus resultados, ¿Cuál es la diferencia en la interpretación de los dos tipos de efecto?
+<!-- -->
 
-c)  ¿Cuál debería ser la relación matemática entre la tasa de cumplimiento, el *LATE* y el *ITT?* ¿Parece mantenerse esta relación en sus resultados? En una tabla presente sus cálculos de *LATE* matemáticos manuales y discuta.
+b)  **¿Cuál debería ser la relación matemática entre la tasa de cumplimiento, el *LATE* y el *ITT?* ¿Parece mantenerse esta relación en sus resultados? En una tabla presente sus cálculos de *LATE* matemáticos manuales y discuta.**
