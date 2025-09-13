@@ -13,13 +13,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Esta es la introduccion
 
-```{r cars}
-summary(cars)
-```
-
 ### 1. Análisis introductorio
 
-Al introducir el artículo, los autores analizaron las limitaciones y lineamientos de la investigación de microcrédito publicada. ¿Cuáles son los problemas en la identificación del impacto del microcrédito si uno simplemente compara los que tienen microcrédito y los que no tienen microcrédito? ¿Qué método utilizan los autores para identificar tal impacto? ¿Cómo resuelve ese método los problemas antes mencionados?
+Al introducir el artículo, los autores analizaron las limitaciones y lineamientos de la investigación de microcrédito publicada.
+
+**¿Cuáles son los problemas en la identificación del impacto del microcrédito si uno simplemente compara los que tienen microcrédito y los que no tienen microcrédito? ¿Qué método utilizan los autores para identificar tal impacto? ¿Cómo resuelve ese método los problemas antes mencionados?**
 
 ### 2. Estimaciones originales
 
@@ -31,11 +29,11 @@ $$
 
 Donde $y_{ia}$ es un resultado para el hogar $i$ en el área $a$, $Treat_{ia}$ es una dicótoma que toma el valor de 1 si el hogar está ubicado en un área tratada, mientras que $\beta$ es el efecto de $ITT$. $X_a$ es el vector con dimensión $K \cdot 1$ de variables de control.
 
-a)  ¿Cuál es la unidad de análisis en el estudio?
+a)  **¿Cuál es la unidad de análisis en el estudio?**
 
 Rta: La unidad de análisis son los hogares y el paper aleatoriza los barrios.
 
-b)  Replique la tabla 2 panel A, columnas 1 y 3 para mostrar el efecto de microfinanzas (ser tratado por el programa) en la obtención de más préstamos (acceso a créditos). Explique la intuición detrás de los resultados. Presente sus resultados con 4 cifras significativas.
+b)  **Replique la tabla 2 panel A, columnas 1 y 3 para mostrar el efecto de microfinanzas (ser tratado por el programa) en la obtención de más préstamos (acceso a créditos). Explique la intuición detrás de los resultados. Presente sus resultados con 4 cifras significativas.**
 
 ```{r}
 # Cargar liberias y paquetes
@@ -112,7 +110,7 @@ stargazer(c1, c2, type = "text",
 
 ```
 
-c)  Replique la tabla 3 panel A, columnas  3 y 4. Explique la intuición detrás de los resultados. Recuerde incluir la corrección por sobremuestreo y errores cluster a nivel de área.
+c)  **Replique la tabla 3 panel A, columnas  3 y 4. Explique la intuición detrás de los resultados. Recuerde incluir la corrección por sobremuestreo y errores cluster a nivel de área.**
 
 ```{r}
 # Revisar NA de la base
@@ -134,14 +132,14 @@ design3 <- svydesign(
   data = data3
 )
 
-# Columna 3: Business assets
+# Columna 3
 c3 <- svyglm(
   bizexpense_1 ~ treatment + area_debt_total_base + area_pop_base + area_business_total_base + area_exp_pc_mean_base + area_literate_head_base + area_literate_base,
   design = design2,
   data = data2
 )
 
-# Columna 4: Business investment
+# Columna 4
 c4 <- svyglm(
   bizprofit_1 ~ treatment + area_debt_total_base + area_pop_base + area_business_total_base + area_exp_pc_mean_base + area_literate_head_base + area_literate_base,
   design = design3,
@@ -159,16 +157,29 @@ stargazer(c3, c4, type = "text",
 
 ```
 
-d)  Usando “any MFI” como definición del tratamiento y “Treated Area” como asignación aleatoria inicial, calcule la tasa de cumplimiento (*compliance rate*) ¿Parece ser alta o baja? (Nota: incluya el ajuste para sobremuestreo)
+d)  **Usando “any MFI” como definición del tratamiento y “Treated Area” como asignación aleatoria inicial, calcule la tasa de cumplimiento (*compliance rate*) ¿Parece ser alta o baja? (Nota: incluya el ajuste para sobremuestreo)**
+
+Rta: La tasa de cumplimiento ponderada en el grupo de tratados es del 25%, mientras que en el grupo de control es del 18%. La diferencia es de 7 puntos porcentuales, lo que indica que la tasa de cumplimiento es **baja**, y por lo tanto la asignación a un área tratada es un instrumento débil para la participación en otras instituciones financieras de microcrédito.
 
 ```{r}
-treated <- data$treatment== 1  # selecciona solo las áreas tratadas
 
-# compliance rate ajustada por pesos
-compliance_rate <- sum(data$anymfi_1[treated] * data$w1[treated]) /
-                   sum(data$w1[treated])
+# Eliminar NA
+data_clean <- data %>% filter(!is.na(anymfi_1), !is.na(treatment), !is.na(w1))
 
-compliance_rate
+# tasas de cumplimiento por grupo
+comp_rates <- data_clean %>%
+  group_by(treatment) %>%
+  summarise(tasa_cumplimiento = weighted.mean(anymfi_1, w = w1, na.rm = TRUE))
+
+comp_rates
+
+# calcular la diferencia (first stage)
+first_stage <- comp_rates$tasa_cumplimiento[comp_rates$treatment == 1] -
+               comp_rates$tasa_cumplimiento[comp_rates$treatment == 0]
+
+first_stage
+p <- first_stage # guardar
+
 
 ```
 
@@ -182,20 +193,86 @@ Finalmente, no incluya ningún control en sus estimaciones y responda las siguie
 
 a)  **¿Cuáles son los supuestos necesarios para que los estimadores de VI sean válidos (en el contexto del artículo)?**
 
-Rta: En el paper de Banerjee, Duflo, Glennerster y Kinnan (2015), la estrategia empírica consiste en estimar el efecto causal de recibir un préstamo de microcrédito de otras instituciones financieras (anymfi_1) sobre variables como el consumo (total_exp_mo_pc_1) y las utilidades del negocio (bizprofit_2). Dado que el acceso al crédito no fue asignado aleatoriamente si no que se trato de un spillover, los autores utilizan como instrumento la ubicación de los bancos de las instituciones dado de que fueron aletorias (treated_area). Para que el instrumento sea válido, se deberá contar con lo siguiente:
+Rta: En el paper de Banerjee, Duflo, Glennerster y Kinnan (2015), la estrategia empírica consiste en estimar el efecto causal de recibir un préstamo de microcrédito de otras instituciones financieras (anymfi_1) sobre variables como el consumo (total_exp_mo_pc_1) y las utilidades del negocio (bizprofit_2). Dado que el acceso al crédito no fue asignado aleatoriamente si no que se trato de un spillover, los autores utilizan como instrumento la ubicación de los bancos de las instituciones dado de que fueron aletorias (treatment). Para que el instrumento sea válido, se deberá contar con lo siguiente:
 
 1)  Relevancia: la ubicación aleatoria de las sucursales de los bancos debe estar correlacionada con la probabilidad de que un hogar reciba microcrédito. En otras palabras, vivir en un área tratada debe aumentar significativamente la probabilidad de tener un préstamo.
 
 2)  Exogeneidad: la variable instrumental (treated_area) debe ser independiente de los factores no observados que afectan directamente el resultado de interés (mejoras el bienestar como hogar). En este contexto, se justifica porque la asignación de las sucursales fue resultado de un procedimiento aleatorio, lo que garantiza que, en promedio, las áreas tratadas y de control eran comparables antes de la intervención.
 
-    **b. Para cada una de las dos variables, estime el efecto *Local Average Treament Effect* de obtener un préstamo, a través del método de Variable Instrumental. Estime también el ITT. Para cada tipo de efecto (LATE e ITT) presente una tabla con sus estimaciones y sus respectivos errores estándar. Interprete sus resultados, ¿Cuál es la diferencia en la interpretación de los dos tipos de efecto?**
+3)  **Para cada una de las dos variables, estime el efecto *Local Average Treament Effect* de obtener un préstamo, a través del método de Variable Instrumental. Estime también el ITT. Para cada tipo de efecto (LATE e ITT) presente una tabla con sus estimaciones y sus respectivos errores estándar. Interprete sus resultados, ¿Cuál es la diferencia en la interpretación de los dos tipos de efecto?**
 
-    Rta:
+    Rta: la estimación por IV identifica un efecto local promedio del tratamiento (LATE), es decir, el impacto del microcrédito sobre un subgrupo de hogares cuya decisión de tomar un préstamo depende de la presencia de una sucursal en su área (compliers).
 
-    Finalmente, bajo estos supuestos, la estimación por IV identifica un efecto local promedio del tratamiento (LATE), es decir, el impacto del microcrédito sobre los hogares cuya decisión de tomar un préstamo depende de la presencia de una sucursal en su área (compliers). Por tanto, los resultados no necesariamente reflejan el efecto para todos los hogares, sino para este subgrupo específico.
+```{r}
 
-    SUTVA (Stable Unit Treatment Value Assumption): los resultados de un hogar deben depender únicamente de su propio estatus de tratamiento, y no del tratamiento asignado a otros hogares o áreas. En la práctica, este supuesto puede verse comprometido si existen efectos de derrame o spillovers entre hogares dentro o entre áreas, ya que la presencia de nuevas sucursales podría afectar a quienes no accedieron directamente al crédito.
+# Eliminar NA
+data4 <- data %>% filter(!is.na(total_exp_mo_pc_1))
+data5 <- data %>% filter(!is.na(bizprofit_1))
 
-<!-- -->
+# Intention-to-Treat (ITT) esto compara todos los municipios tratados vs. control.
+itt1_consumo <- lm(total_exp_mo_pc_1 ~ treatment, data = data4, weights = w1)
+itt2_profit  <- lm(bizprofit_1 ~ treatment, data = data5, weights = w1)
 
-b)  **¿Cuál debería ser la relación matemática entre la tasa de cumplimiento, el *LATE* y el *ITT?* ¿Parece mantenerse esta relación en sus resultados? En una tabla presente sus cálculos de *LATE* matemáticos manuales y discuta.**
+# Guardar coeficientes ITT
+itt_consumo_hat <- coef(itt1_consumo)["treatment"]
+itt_profit_hat  <- coef(itt2_profit)["treatment"]
+
+
+# LATE (Local Average Treatment Effect) es el efecto promedio para los individuos cuyo estatus de tratamiento está determinado por el instrumento
+late1_consumo <- ivreg(total_exp_mo_pc_1 ~ anymfi_1 | treatment, weights = w1, data = data4)
+late2_profit <- ivreg(bizprofit_1 ~ anymfi_1 | treatment, weights = w1, data = data5)
+# Guardar coeficientes LATE
+late_consumo_iv <- coef(late1_consumo)["anymfi_1"]
+late_profit_iv  <- coef(late2_profit)["anymfi_1"]
+
+# Agrupar errores por barrio ITT
+coeftest(itt1_consumo, vcov = vcovCL(itt1_consumo, cluster = ~ areaid))
+coeftest(itt2_profit, vcov = vcovCL(itt2_profit, cluster = ~ areaid))
+
+# Agrupar errores por barrio LATE
+coeftest(late1_consumo, vcov = vcovCL(late1_consumo, cluster = ~ areaid))
+coeftest(late2_profit, vcov = vcovCL(late2_profit, cluster = ~ areaid))
+
+# Matrices para cluster
+matriz_ITT1   <- vcovCL(itt1_consumo, cluster = ~ areaid)
+matriz_ITT2   <- vcovCL(itt2_profit, cluster = ~ areaid)
+matriz_LATE1   <- vcovCL(late1_consumo, cluster = ~ areaid)
+matriz_LATE2  <- vcovCL(late2_profit, cluster = ~ areaid)
+
+# Errores estandar
+se_itt_consumo   <- sqrt(diag(matriz_ITT1))
+se_itt_profit  <- sqrt(diag(matriz_ITT2))
+se_late_consumo   <- sqrt(diag(matriz_LATE1))
+se_late_profit   <- sqrt(diag(matriz_LATE2))
+
+# Tabla
+stargazer(itt1_consumo, itt2_profit,late1_consumo, late2_profit,
+          type = "text",
+          se = list(se_itt_consumo,se_itt_profit,se_late_consumo,se_late_profit),
+          column.labels = c("ITT consumo","ITT profit", 
+                            "LATE consumo", "LATE profit"),
+          title = "Impacto del microcrédito con errores agrupados por barrio")
+
+
+```
+
+**c. ¿Cuál debería ser la relación matemática entre la tasa de cumplimiento, el *LATE* y el *ITT?* ¿Parece mantenerse esta relación en sus resultados? En una tabla presente sus cálculos de *LATE* matemáticos manuales y discuta.**
+
+Rta: el LATE se obtiene dividiendo el ITT por la tasa de cumplimiento.Se observa que los valores de LATE calculados manualmente son muy similares a los estimados mediante el método de variables instrumentales. Pero existen diferencias (4% al 11%) y se puede explicar como la forma en la que se calcula manual no se tiene en cuenta errores estándar, covarianzas etc. Finalmente, la relación matemática entre ITT, tasa de cumplimiento y LATE se cumple en la práctica y que la estrategia de identificación empleada resulta consistente para estimar el efecto local del microcrédito sobre los hogares que cumplen con la asignación.
+
+```{r}
+# LATE manual 
+late_consumo_manual <- itt_consumo_hat / p
+late_profit_manual  <- itt_profit_hat  / p
+
+# Tabla final
+tabla_resultados <- data.frame(
+  Outcome = c("Consumo", "Profit"),
+  ITT = c(itt_consumo_hat, itt_profit_hat),
+  Tasa_cumplimiento = c(p, p),
+  LATE_manual = c(late_consumo_manual, late_profit_manual),
+  LATE_IV = c(late_consumo_iv, late_profit_iv)
+)
+tabla_resultados
+
+```
