@@ -11,13 +11,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Experimentos Aleatorios
 
-Esta es la introduccion
+Este trabajo tiene como objetivo replicar parte de los resultados de Banerjee, Duflo, Glennerster y Kinnan (2015) sobre el impacto del microcrédito en Hyderabad, India. A través de esta replicación buscamos poner en práctica lo aprendido en clase y comprender cómo la evidencia empírica respalda (o cuestiona) las conclusiones sobre el papel de las microfinanzas en la reducción de la pobreza.
 
 ### 1. Análisis introductorio
 
 Al introducir el artículo, los autores analizaron las limitaciones y lineamientos de la investigación de microcrédito publicada.
 
 **¿Cuáles son los problemas en la identificación del impacto del microcrédito si uno simplemente compara los que tienen microcrédito y los que no tienen microcrédito? ¿Qué método utilizan los autores para identificar tal impacto? ¿Cómo resuelve ese método los problemas antes mencionados?**
+
+Los principales problemas de identificación en este caso radican en que, si se comparan de manera ingenua los hogares que recibieron microcrédito con aquellos que no lo hicieron, surge un sesgo de selección. Esto ocurre porque pueden existir múltiples dimensiones observables y no observables que influyen tanto en la probabilidad de recibir un préstamo como en los resultados que se quieren evaluar. Por ejemplo, los hogares que buscan y obtienen microcrédito suelen ser más ambiciosos y tener mayores aspiraciones de emprender, expandir negocios o invertir en educación, lo que los hace sistemáticamente distintos de aquellos que no buscan crédito. Además, los prestatarios pueden contar con más activos, mejores redes sociales o un patrimonio inicial que los hace más aptos para acceder y aprovechar un préstamo. A nivel contextual también existe un sesgo de ubicación del programa, ya que las instituciones tienden a abrir sucursales en barrios donde esperan una demanda mínima y donde existen condiciones estructurales más favorables, dejando fuera barrios con características distintas.
+
+Para superar estos problemas, los autores implementaron un experimento aleatorizado a nivel de barrio en Hyderabad, India. Partieron de 104 barrios identificados por Spandana como posibles lugares de expansión y los emparejaron según sus características socioeconómicas. Dentro de cada par, uno fue asignado aleatoriamente al tratamiento, es decir recibir una sucursal, y el otro al control. Como resultado, 52 barrios obtuvieron acceso al microcrédito y 52 quedaron como grupo de comparación.
+
+La asignación aleatoria asegura que, en promedio, los barrios tratados y los de control sean equivalentes en sus condiciones previas tanto observables como no observables, de modo que la única diferencia sistemática entre ambos grupos es la intervención. Así, cualquier diferencia en los resultados posteriores puede atribuirse causalmente al acceso al microcrédito. Además, este diseño resuelve el problema de program placement al desligar la decisión de abrir sucursales de las condiciones del barrio, ya que no es la institución la que decide estratégicamente dónde expandirse, sino el azar. Con ello se elimina la posibilidad de que los mejores barrios sean los que reciban primero el programa, lo cual garantiza que la comparación refleje el verdadero impacto del microcrédito y no diferencias preexistentes.
 
 ### 2. Estimaciones originales
 
@@ -29,9 +35,9 @@ $$
 
 Donde $y_{ia}$ es un resultado para el hogar $i$ en el área $a$, $Treat_{ia}$ es una dicótoma que toma el valor de 1 si el hogar está ubicado en un área tratada, mientras que $\beta$ es el efecto de $ITT$. $X_a$ es el vector con dimensión $K \cdot 1$ de variables de control.
 
-a)  **¿Cuál es la unidad de análisis en el estudio?**
+**a) ¿Cuál es la unidad de análisis en el estudio?**
 
-Rta: La unidad de análisis son los hogares y el paper aleatoriza los barrios.
+Si bien los hogares son la unidad de análisis empleada para medir los resultados, la aleatorización del tratamiento se llevó a cabo a nivel de barrio, de modo que la apertura de la sucursal se asignó colectivamente y no de manera individual.
 
 b)  **Replique la tabla 2 panel A, columnas 1 y 3 para mostrar el efecto de microfinanzas (ser tratado por el programa) en la obtención de más préstamos (acceso a créditos). Explique la intuición detrás de los resultados. Presente sus resultados con 4 cifras significativas.**
 
@@ -74,16 +80,16 @@ str(data)
 colSums(is.na(data))
 
 # Eliminar NA
-data1 <- data %>% filter(!is.na(spandana_1))
+data_inicial <- data %>% filter(!is.na(spandana_1))
 
 # Filtrar solo hogares de Endline 1
-data1 <- subset(data, sample1 == 1)
+data_inicial <- subset(data_inicial, sample1 == 1)
 
 # Definir diseño muestral con pesos y clustering por área
 design1 <- svydesign(
-  id = ~areaid,   # cluster nivel área
-  weights = ~w1,  # pesos 
-  data = data1
+  id = ~areaid,   
+  weights = ~w1,  
+  data = data_inicial
 )
 
 # 5. Regresiones
