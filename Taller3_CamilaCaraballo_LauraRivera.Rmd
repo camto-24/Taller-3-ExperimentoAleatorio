@@ -2,12 +2,20 @@
 title: "Taller 3 - Experimento Aleatorio"
 author: "Maria Camila Caraballo, Laura Sarif Rivera"
 date: "2025-09-10"
-output: pdf_document
+output: 
+  pdf_document:
+    latex_engine: xelatex
 output_dir: "outputs"
+header-includes:
+  - \usepackage{adjustbox}
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include= FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
 knitr::opts_knit$set(root.dir = "C:/Users/mc-c2/OneDrive - Universidad de los andes/Universidad/MECA/Big Data y Machine Learning/Repositorios/BD_ML_taller_1/Taller-3-ExperimentoAleatorio")
 ```
 
@@ -43,7 +51,7 @@ Si bien los hogares son la unidad de análisis empleada para medir los resultado
 
 **Replique la tabla 2 panel A, columnas 1 y 3 para mostrar el efecto de microfinanzas (ser tratado por el programa) en la obtención de más préstamos (acceso a créditos). Explique la intuición detrás de los resultados. Presente sus resultados con 4 cifras significativas.**
 
-```{r}
+```{r results='asis', echo=FALSE}
 # Cargar liberias y paquetes
 
 #install.packages("haven") cual
@@ -69,17 +77,10 @@ library(lmtest)
 library(sandwich)
 library(tidyverse)
 library(stargazer)
-library(dplyr) 
 library(survey)
 
 # Leer archivo .dta
 data <- read_dta("data_endline_1and2.dta")
-
-# Ver base
-str(data)
-
-# Revisar NA de la base
-colSums(is.na(data))
 
 # Eliminar NA
 data_inicial <- data %>% filter(!is.na(spandana_1))
@@ -108,7 +109,7 @@ mfi <- svyglm(
 )
 
 # 6. Mostrar tabla de resultados
-stargazer(spandana, mfi, type = "text",
+stargazer(spandana, mfi, type = "latex",
           keep = "treatment",
           covariate.labels = c("Tratamiento"),
           dep.var.labels = c("Spandana",
@@ -123,9 +124,7 @@ En cuanto a la variable *Any MFI,* también se observa un efecto positivo y sign
 
 **Replique la tabla 3 panel A, columnas 3 y 4. Explique la intuición detrás de los resultados.**
 
-```{r}
-# Revisar NA de la base
-colSums(is.na(data))
+```{r results='asis', echo=FALSE}
 
 # Eliminar NA
 data_gasto <- data %>% filter(!is.na(bizexpense_1))
@@ -159,7 +158,7 @@ ganancia <- svyglm(
 )
 
 # Tabla 
-stargazer(gasto, ganancia, type = "text",
+stargazer(gasto, ganancia, type = "latex",
           keep = "treatment",
           covariate.labels = c("Treatment"),
           dep.var.labels = c("Gasto",
@@ -177,7 +176,6 @@ En este sentido, los hallazgos cuestionan la idea de que el financiamiento media
 Con base en los resultados, la tasa de participación efectiva en microcrédito es del 25 % en los hogares de áreas tratadas y del 18 % en los de control. La diferencia entre ambos grupos, equivalente a 7 puntos porcentuales, constituye la tasa de cumplimiento. Este valor es relativamente bajo, lo que indica que la asignación a un área tratada solo aumentó de manera limitada la probabilidad de acceder a un préstamo. En consecuencia, el instrumento derivado de la asignación aleatoria resulta válido pero débil, ya que no genera un cambio sustancial en la participación en instituciones de microcrédito.
 
 ```{r}
-
 # Eliminar NA
 data_clean <- data %>% filter(!is.na(anymfi_1), !is.na(treatment), !is.na(w1))
 
@@ -213,13 +211,12 @@ Finalmente, se requiere la condición demonotonicidad, que implica que no debe e
 
 **Para cada una de las dos variables, estime el efecto *Local Average Treament Effect* de obtener un préstamo, a través del método de Variable Instrumental. Estime también el ITT. Para cada tipo de efecto (LATE e ITT) presente una tabla con sus estimaciones y sus respectivos errores estándar. Interprete sus resultados, ¿Cuál es la diferencia en la interpretación de los dos tipos de efecto?**
 
-```{r}
-
+```{r results='asis', echo=FALSE}
 # Eliminar NA
-data_exp <- data %>% filter(!is.na(total_exp_mo_pc_1))
+data_exp  <- data %>% filter(!is.na(total_exp_mo_pc_1))
 data_prof <- data %>% filter(!is.na(bizprofit_1))
 
-# Intention-to-Treat (ITT) esto compara todos los municipios tratados vs. control.
+# Intention-to-Treat (ITT) modelos
 itt1_consumo <- lm(total_exp_mo_pc_1 ~ treatment, data = data_exp, weights = w1)
 itt2_profit  <- lm(bizprofit_1 ~ treatment, data = data_prof, weights = w1)
 
@@ -227,44 +224,39 @@ itt2_profit  <- lm(bizprofit_1 ~ treatment, data = data_prof, weights = w1)
 itt_consumo_hat <- coef(itt1_consumo)["treatment"]
 itt_profit_hat  <- coef(itt2_profit)["treatment"]
 
-# LATE (Local Average Treatment Effect) es el efecto promedio para los individuos cuyo estatus de tratamiento está determinado por el instrumento
-late1_consumo <- ivreg(total_exp_mo_pc_1 ~ anymfi_1 | treatment, weights = w1, data = data_exp)
-late2_profit <- ivreg(bizprofit_1 ~ anymfi_1 | treatment, weights = w1, data = data_prof)
+# Local Average Treatment Effect (LATE) modelos con IV
+late1_consumo <- ivreg(total_exp_mo_pc_1 ~ anymfi_1 | treatment, 
+                       weights = w1, data = data_exp)
+late2_profit  <- ivreg(bizprofit_1 ~ anymfi_1 | treatment, 
+                       weights = w1, data = data_prof)
 
 # Guardar coeficientes LATE
 late_consumo_iv <- coef(late1_consumo)["anymfi_1"]
 late_profit_iv  <- coef(late2_profit)["anymfi_1"]
 
-# Agrupar errores por barrio ITT
-coeftest(itt1_consumo, vcov = vcovCL(itt1_consumo, cluster = ~ areaid))
-coeftest(itt2_profit, vcov = vcovCL(itt2_profit, cluster = ~ areaid))
+# Matrices de varianzas-cluster
+matriz_ITT1  <- vcovCL(itt1_consumo, cluster = ~ areaid)
+matriz_ITT2  <- vcovCL(itt2_profit, cluster = ~ areaid)
+matriz_LATE1 <- vcovCL(late1_consumo, cluster = ~ areaid)
+matriz_LATE2 <- vcovCL(late2_profit, cluster = ~ areaid)
 
-# Agrupar errores por barrio LATE
-coeftest(late1_consumo, vcov = vcovCL(late1_consumo, cluster = ~ areaid))
-coeftest(late2_profit, vcov = vcovCL(late2_profit, cluster = ~ areaid))
+# Errores estándar agrupados
+se_itt_consumo  <- sqrt(diag(matriz_ITT1))
+se_itt_profit   <- sqrt(diag(matriz_ITT2))
+se_late_consumo <- sqrt(diag(matriz_LATE1))
+se_late_profit  <- sqrt(diag(matriz_LATE2))
 
-# Matrices para cluster
-matriz_ITT1   <- vcovCL(itt1_consumo, cluster = ~ areaid)
-matriz_ITT2   <- vcovCL(itt2_profit, cluster = ~ areaid)
-matriz_LATE1   <- vcovCL(late1_consumo, cluster = ~ areaid)
-matriz_LATE2  <- vcovCL(late2_profit, cluster = ~ areaid)
-
-# Errores estandar
-se_itt_consumo   <- sqrt(diag(matriz_ITT1))
-se_itt_profit  <- sqrt(diag(matriz_ITT2))
-se_late_consumo   <- sqrt(diag(matriz_LATE1))
-se_late_profit   <- sqrt(diag(matriz_LATE2))
-
-# Tabla
-stargazer(itt1_consumo, itt2_profit,late1_consumo, late2_profit,
-          type = "text",
+# Tabla final con Stargazer
+stargazer(itt1_consumo, itt2_profit, late1_consumo, late2_profit,
+          type = "latex",
           dep.var.labels.include = FALSE,
           dep.var.labels = NULL,
-          se = list(se_itt_consumo,se_itt_profit,se_late_consumo,se_late_profit),
-          column.labels = c("ITT consumo","ITT Utilidad", 
-                            "LATE consumo", "LATE Utilidad"),
-          title = "Impacto del microcrédito con errores agrupados por barrio")
-
+          se = list(se_itt_consumo, se_itt_profit, 
+                    se_late_consumo, se_late_profit),
+          column.labels = c("ITT Consumo","ITT Utilidad", 
+                            "LATE Consumo", "LATE Utilidad"),
+          title = "Impacto del microcrédito con errores agrupados por barrio",
+          omit.stat = c("f","ser","rsq","adj.rsq","aic","bic","ll")) 
 
 ```
 
@@ -289,8 +281,6 @@ tabla_resultados <- data.frame(
   LATE_manual = c(late_consumo_manual, late_profit_manual),
   LATE_IV = c(late_consumo_iv, late_profit_iv)
 )
-tabla_resultados
-
 ```
 
 El LATE se obtiene dividiendo el estimador ITT por la tasa de cumplimiento. Esta identidad refleja que el ITT mide el efecto promedio de la asignación al tratamiento en toda la población, mientras que el LATE aísla el impacto del microcrédito únicamente en el subgrupo de hogares cuya decisión de endeudarse depende de dicha asignación (los *compliers*).
