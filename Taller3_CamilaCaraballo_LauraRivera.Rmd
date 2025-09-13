@@ -217,10 +217,10 @@ itt2_profit  <- lm(bizprofit_1 ~ treatment, data = data5, weights = w1)
 itt_consumo_hat <- coef(itt1_consumo)["treatment"]
 itt_profit_hat  <- coef(itt2_profit)["treatment"]
 
-
 # LATE (Local Average Treatment Effect) es el efecto promedio para los individuos cuyo estatus de tratamiento está determinado por el instrumento
 late1_consumo <- ivreg(total_exp_mo_pc_1 ~ anymfi_1 | treatment, weights = w1, data = data4)
 late2_profit <- ivreg(bizprofit_1 ~ anymfi_1 | treatment, weights = w1, data = data5)
+
 # Guardar coeficientes LATE
 late_consumo_iv <- coef(late1_consumo)["anymfi_1"]
 late_profit_iv  <- coef(late2_profit)["anymfi_1"]
@@ -258,7 +258,7 @@ stargazer(itt1_consumo, itt2_profit,late1_consumo, late2_profit,
 
 **c. ¿Cuál debería ser la relación matemática entre la tasa de cumplimiento, el *LATE* y el *ITT?* ¿Parece mantenerse esta relación en sus resultados? En una tabla presente sus cálculos de *LATE* matemáticos manuales y discuta.**
 
-Rta: el LATE se obtiene dividiendo el ITT por la tasa de cumplimiento.Se observa que los valores de LATE calculados manualmente son muy similares a los estimados mediante el método de variables instrumentales. Pero existen diferencias (4% al 11%) y se puede explicar como la forma en la que se calcula manual no se tiene en cuenta errores estándar, covarianzas etc. Finalmente, la relación matemática entre ITT, tasa de cumplimiento y LATE se cumple en la práctica y que la estrategia de identificación empleada resulta consistente para estimar el efecto local del microcrédito sobre los hogares que cumplen con la asignación.
+Rta: el LATE se obtiene dividiendo el ITT por la tasa de cumplimiento.Se observa que los valores de LATE calculados manualmente son muy similares a los estimados mediante el método de variables instrumentales. Pero existen diferencias y se puede explicar como la forma en la que se calcula manual no se tiene en cuenta errores estándar, covarianzas etc. Finalmente, la relación matemática entre ITT, tasa de cumplimiento y LATE se cumple en la práctica y que la estrategia de identificación empleada resulta consistente para estimar el efecto local del microcrédito sobre los hogares que cumplen con la asignación.
 
 ```{r}
 # LATE manual 
